@@ -1,13 +1,15 @@
 # Webscrape Creditex
 
+
 import requests
 from bs4 import BeautifulSoup
-import pandas
+import pandas 
+import os
 
 session = requests.Session() #persist parameters and cookiesx
 years1 = range(2006, 2008)
 years2 = range(2008, 2010)
-years3 = range(2011, 2022)
+years3 = range(2010, 2022)
 #
 main_url = 'https://www.creditfixings.com{id}'
 urlyears1 = 'https://www.creditfixings.com/CreditEventAuctions/static/credit_event_auction/{year}.shtml'
@@ -45,13 +47,11 @@ for i in range(length):
     id2 = id2.replace("dis", "res")
     html3 = session.get(url2008id.format(id=id2)).text # this the auction page and we need to select the link the bring us to the results
     soup3 = BeautifulSoup(html3, "html.parser")
-
     for table in soup3.find_all('table'):
         print(auction_name)
         print(pandas.read_html(str(table)))
 
 year = 2009
-
 html1 = session.get(urlyears1.format(year=year)).text #request the html by year
 soup1 = BeautifulSoup(html1, "html.parser")#parse the html
 auctionId = soup1.find_all("span", class_="standalonelink") # import all the anchor that have "holdings.jsp" in their href
@@ -81,7 +81,7 @@ for i in range(length):
     html3 = session.get(main_url.format(id=id2)).text #get to the page with results for each ticker
     soup3 = BeautifulSoup(html3, "html.parser") #parse the page
     for table in soup3.find_all('table'):
-        print(auction_name)  #add the name of the company whose CDS are auctioned before each table
+        print(auction_name)  # add the name of the company whose CDS are auctioned before each table
         print(pandas.read_html(str(table))) # print all the table
 
 
@@ -92,16 +92,17 @@ for year in years3:
     length = len(auctionId)  # how many auction for each year
     for i in range(length):
         id1 = auctionId[i].get('href') # now let's extract the link to each auction
-        auction_name = auctionId[i].text
         html2 = session.get(urlid.format(id=id1)).text # this the auction page and we need to select the link the bring us to the results
         soup2 = BeautifulSoup(html2, "html.parser") #parse the html
         ticker = soup2.select('a[href^="results.jsp"]') # select the anchor that have results.jsp in href
         id2 = ticker[0].get('href') #it extracts something like "/results.jsp?ticker=ASTL"
         html3 = session.get(urlid.format(id=id2)).text #get to the page with results for each ticker
         soup3 = BeautifulSoup(html3, "html.parser") #parse the page
-        for table in soup3.find_all('table'):
-            print(auction_name)  #add the name of the company whose CDS are auctioned before each table
-            print(pandas.read_html(str(table))) # print all the table
+        auction_name = id2.replace('results.jsp?ticker=','')
+        for idx, table in enumerate(soup3.find_all('table')): # add the name of the company whose CDS are auctioned before each table
+            temp =  pandas.read_html(str(table)) # print all the table
+            df = pandas.DataFrame(temp[0])  #title = str(year)+ " " +auction_name+str(idx)+".csv"
+            df.to_csv(os.getcwd()+"/"+str(year)+" "+auction_name+" "+ str(idx)+".csv", index = False)
 
 
 #
